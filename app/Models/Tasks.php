@@ -65,7 +65,7 @@ class Tasks extends Model
     public function updateTask(int $id, array $attributes) {
         $task = $this->getTask($id);
         if ($task == null) {
-            throw new ModelNotFoundException('Cant find task');
+            throw new ModelNotFoundException("Can't find task");
         }
         $task->parent_id = $attributes['parent_id'];
         $task->status = $attributes['status'];
