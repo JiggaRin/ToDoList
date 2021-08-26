@@ -20,7 +20,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 Route::group(['prefix' => 'task'], function () {
     Route::get('/get/{id}', [TasksController::class, 'get']);
-    Route::get('/gets', [TasksController::class, 'gets']);
+    Route::get('/getAll', [TasksController::class, 'getAll']);
     Route::post('/store', [TasksController::class, 'store']);
     Route::put('/update/{id}', [TasksController::class, 'update']);
     Route::delete('/delete/{id}', [TasksController::class, 'delete']);

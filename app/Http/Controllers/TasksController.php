@@ -11,11 +11,13 @@ class TasksController extends Controller
 {
     protected $task;
 
-    public function __construct(Tasks $task) {
+    public function __construct(Tasks $task)
+    {
         $this->task = $task;
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $task = $this->task->createTask($request->all());
         return response()->json($task);
     }
@@ -25,12 +27,13 @@ class TasksController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function update($id, Request $request) {
+    public function update($id, Request $request)
+    {
         try {
             $task = $this->task->updateTask($id, $request->all());
             return response()->json($task);
-        }catch (ModelNotFoundException $exception) {
-            return response()->json(['msg'  => $exception->getMessage()], 404);
+        } catch (ModelNotFoundException $exception) {
+            return response()->json(['msg' => $exception->getMessage()], 404);
         }
     }
 
@@ -49,8 +52,9 @@ class TasksController extends Controller
     /**
      * @return JsonResponse
      */
-    public function gets() {
-        $tasks = $this->task->getsTask();
+    public function getAll()
+    {
+        $tasks = $this->task->getAllTask();
         return response()->json($tasks);
     }
 
@@ -58,9 +62,10 @@ class TasksController extends Controller
      * @param $id
      * @return JsonResponse
      */
-    public function delete($id) {
+    public function delete($id)
+    {
         try {
-            $task = $this->task->deleteTask($id);
+            $this->task->deleteTask($id);
             return response()->json(['msg' => 'Post ' . $id . ' deleted successfully']);
         } catch (ModelNotFoundException $exception) {
             return response()->json(['msg' => $exception->getMessage()], 404);

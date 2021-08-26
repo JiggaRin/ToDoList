@@ -24,14 +24,14 @@ class TasksFactory extends Factory
     public function definition()
     {
         return [
-            'parent_id' => rand(0,20),
-            'status' => rand(0, 1),
-            'priority' => rand(0, 5),
-            'title' => Str::random(10),
-            'description' => Str::random(15),
+            'parent_id' => $this->faker->numberBetween(0, 20),
+            'status' => $this->faker->boolean(),
+            'priority' => $this->faker->numberBetween(0, 5),
+            'title' => $this->faker->realText(10),
+            'description' => $this->faker->realText(15),
             'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
             'updated_at' => Carbon::now()->format('Y-m-d H:i:s'),
-            'completion_time' => Str::random(15),
+            'completion_time' => $this->faker->dateTimeThisYear(),
         ];
     }
 }

@@ -52,7 +52,7 @@ class Tasks extends Model
     /**
      * @return Tasks[]|Collection
      */
-    public function getsTask() {
+    public function getAllTask() {
         $task = $this::all();
         return $task;
     }
