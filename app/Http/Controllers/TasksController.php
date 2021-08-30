@@ -11,11 +11,6 @@ class TasksController extends Controller
 {
     protected $task;
 
-    public function __construct(Tasks $task)
-    {
-        $this->task = $task;
-    }
-
     public function store(Request $request)
     {
         $task = $this->task->createTask($request->all());
@@ -41,9 +36,10 @@ class TasksController extends Controller
      * @param $id
      * @return JsonResponse
      */
-    public function get($id) {
+    public function get($id)
+    {
         $task = $this->task->getsTask($id);
-        if($task) {
+        if ($task) {
             return response()->json($task);
         }
         return response()->json(['msg' => 'Tasks not found'], 404);
@@ -54,19 +50,34 @@ class TasksController extends Controller
      */
     public function getAll()
     {
-        $tasks = $this->task->getAllTask();
+        $tasks = Tasks::getAllTask();
         return response()->json($tasks);
     }
 
     /**
-     * @param $id
+     * @param Request $request
      * @return JsonResponse
      */
-    public function delete($id)
+    public function filter(Request $request)
+    {
+            $task = $this->task->filter($request);
+            if($task) {
+                return response()->json($task);
+            } else {
+                echo 'Sorry no match';
+            }
+
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function delete(Request $request)
     {
         try {
-            $this->task->deleteTask($id);
-            return response()->json(['msg' => 'Post ' . $id . ' deleted successfully']);
+            $this->task->deleteTask($request);
+            return response()->json(['msg' => 'Post ' . ' deleted successfully']);
         } catch (ModelNotFoundException $exception) {
             return response()->json(['msg' => $exception->getMessage()], 404);
         }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Tasks extends Model
 {
@@ -22,12 +23,26 @@ class Tasks extends Model
         'completion_time'
     ];
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function subtasks() {
+        return $this->hasMany('App\Models\Tasks', 'parent_id');
+    }
+
+    public function subsubtasks()
+    {
+        return $this->belongsToMany('App\Models\Tasks', 'parent_id');
+    }
+
     /**
      * @param array $attributes
      * @return Tasks
      */
-
-    public function createTask(array $attributes) {
+    public function createTask(array $attributes): Tasks
+    {
         $task = new self();
         $task->parent_id = $attributes['parent_id'];
         $task->status = $attributes['status'];
@@ -44,17 +59,18 @@ class Tasks extends Model
      * @param int $id
      * @return mixed
      */
-    public function getTask(int $id) {
-        $task = $this->where('id',$id)->first();
+    public function getTask(int $id)
+    {
+        $task = $this->where('id', $id)->first();
         return $task;
     }
 
     /**
-     * @return Tasks[]|Collection
+     * @return Collection|Tasks[]
      */
-    public function getAllTask() {
-        $task = $this::all();
-        return $task;
+    public static function getAllTask()
+    {
+        return Tasks::where('parent_id', '=', null)->with('subtasks')->get();
     }
 
     /**
@@ -62,7 +78,8 @@ class Tasks extends Model
      * @param array $attributes
      * @return mixed
      */
-    public function updateTask(int $id, array $attributes) {
+    public function updateTask(int $id, array $attributes)
+    {
         $task = $this->getTask($id);
         if ($task == null) {
             throw new ModelNotFoundException("Can't find task");
@@ -78,14 +95,36 @@ class Tasks extends Model
     }
 
     /**
-     * @param int $id
      * @return mixed
      */
-    public function deleteTask(int $id) {
-        $task = $this->getTask($id);
-        if($task == null) {
+    public function filter($attributes)
+    {
+        if ($attributes['title']) {
+            $matchAttributes = ['title' => $attributes['title']];
+        } else {
+            $matchAttributes = [
+                'status' => $attributes['status'],
+                'priority' => $attributes['priority'],
+            ];
+        }
+
+        return Tasks::where($matchAttributes)->orderBy($attributes['sorted'], 'asc')->get();
+    }
+
+    /**
+     * @param $attributes
+     * @return mixed
+     */
+    public function deleteTask($attributes)
+    {
+        $task = $this->getTask($attributes['id']);
+        if ($task == null) {
             throw new ModelNotFoundException('Task not found');
         }
-        return $task->delete();
+        if($task['status'] == 0) {
+            return $task->delete();
+        } else {
+            throw new ModelNotFoundException('This task is already finished');
+        }
     }
 }
