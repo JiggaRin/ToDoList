@@ -9,11 +9,11 @@ use Illuminate\Http\Request;
 
 class TasksController extends Controller
 {
-    protected $task;
 
-    public function store(Request $request)
+    public function create(Request $request): JsonResponse
     {
-        $task = $this->task->createTask($request->all());
+        $task = new Tasks($request->all());
+        Tasks::createTask($task);
         return response()->json($task);
     }
 
@@ -22,11 +22,26 @@ class TasksController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function update($id, Request $request)
+    public function update($id, Request $request): JsonResponse
     {
         try {
-            $task = $this->task->updateTask($id, $request->all());
-            return response()->json($task);
+            $updated_task = Tasks::updateTask($id, $request->all());
+            return response()->json($updated_task);
+        } catch (ModelNotFoundException $exception) {
+            return response()->json(['msg' => $exception->getMessage()], 404);
+        }
+    }
+
+    /**
+     * @param $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateStatus($id, Request $request): JsonResponse
+    {
+        try {
+            $updatedStatus = Tasks::updateSt($id, $request['status']);
+            return response()->json($updatedStatus);
         } catch (ModelNotFoundException $exception) {
             return response()->json(['msg' => $exception->getMessage()], 404);
         }
@@ -60,24 +75,22 @@ class TasksController extends Controller
      */
     public function filter(Request $request)
     {
-            $task = $this->task->filter($request);
-            if($task) {
-                return response()->json($task);
-            } else {
-                echo 'Sorry no match';
-            }
-
+        $task = $this->task->filter($request);
+        if ($task) {
+            return response()->json($task);
+        } else {
+            echo 'Sorry no match';
+        }
     }
 
     /**
-     * @param Request $request
+     * @param $id
      * @return JsonResponse
      */
-    public function delete(Request $request)
+    public function delete($id): JsonResponse
     {
         try {
-            $this->task->deleteTask($request);
-            return response()->json(['msg' => 'Post ' . ' deleted successfully']);
+            return Tasks::deleteTask($id);
         } catch (ModelNotFoundException $exception) {
             return response()->json(['msg' => $exception->getMessage()], 404);
         }

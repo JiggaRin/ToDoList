@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\JsonResponse;
 
 class Tasks extends Model
 {
@@ -20,7 +22,8 @@ class Tasks extends Model
         'priority',
         'title',
         'description',
-        'completion_time'
+        'completion_time',
+        'user_id'
     ];
 
     public function user(): BelongsTo
@@ -28,41 +31,28 @@ class Tasks extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function subtasks() {
-        return $this->hasMany('App\Models\Tasks', 'parent_id');
+    public function subtasks(): HasMany
+    {
+        return $this->hasMany('App\Models\Tasks', 'parent_id')->with('subtasks');
     }
 
-    public function subsubtasks()
-    {
-        return $this->belongsToMany('App\Models\Tasks', 'parent_id');
-    }
 
     /**
-     * @param array $attributes
-     * @return Tasks
+     * @param Tasks $new_task
+     * @return bool
      */
-    public function createTask(array $attributes): Tasks
+    public static function createTask(Tasks $new_task): bool
     {
-        $task = new self();
-        $task->parent_id = $attributes['parent_id'];
-        $task->status = $attributes['status'];
-        $task->priority = $attributes['priority'];
-        $task->title = $attributes['title'];
-        $task->description = $attributes['description'];
-        $task->completion_time = $attributes['completion_time'];
-        $task->save();
-
-        return $task;
+        return $new_task->save();
     }
 
     /**
      * @param int $id
      * @return mixed
      */
-    public function getTask(int $id)
+    public static function getTask(int $id)
     {
-        $task = $this->where('id', $id)->first();
-        return $task;
+        return Tasks::where('id', $id)->with('subtasks')->first();
     }
 
     /**
@@ -75,23 +65,42 @@ class Tasks extends Model
 
     /**
      * @param int $id
-     * @param array $attributes
+     * @param array $update_task
      * @return mixed
      */
-    public function updateTask(int $id, array $attributes)
+    public static function updateTask(int $id, array $update_task)
     {
-        $task = $this->getTask($id);
+        $task = self::find($id);
         if ($task == null) {
             throw new ModelNotFoundException("Can't find task");
         }
-        $task->parent_id = $attributes['parent_id'];
-        $task->status = $attributes['status'];
-        $task->priority = $attributes['priority'];
-        $task->title = $attributes['title'];
-        $task->description = $attributes['description'];
-        $task->completion_time = $attributes['completion_time'];
-        $task->save();
-        return $task;
+        $task->parent_id = $update_task['parent_id'];
+        $task->status = $update_task['status'];
+        $task->priority = $update_task['priority'];
+        $task->title = $update_task['title'];
+        $task->description = $update_task['description'];
+        $task->user_id = $update_task['user_id'];
+        $task->completion_time = $update_task['completion_time'];
+        return $task->save();
+    }
+
+    public static function updateSt(int $id, int $status): JsonResponse
+    {
+        try {
+            $task = self::getTask($id);
+            $unfinished_tasks = array_filter($task->subtasks->toArray(), function ($item) {
+                return $item['status'] === 0;
+            });
+            if (!empty($unfinished_tasks)) {
+                return response()->json(['msg' => 'There is unfinished subtasks left'], 404);
+            } else {
+                $task->status = $status;
+                $task->save();
+                return response()->json(['msg' => 'Status update success']);
+            }
+        } catch (ModelNotFoundException $exception) {
+            return response()->json(['msg' => 'Something went wrong']);
+        }
     }
 
     /**
@@ -99,8 +108,17 @@ class Tasks extends Model
      */
     public function filter($attributes)
     {
+        $query = Tasks::select();
         if ($attributes['title']) {
+            $query->where('title', $attributes['title']);
             $matchAttributes = ['title' => $attributes['title']];
+        }
+        if($attributes['priority']) {
+            if(is_array($attributes['priority'])){
+                $query->whereBetween('priority', $attributes['priority'][0], $attributes['priority'][1]);
+            } else {
+                $query->where('priority', $attributes['priority']);
+            }
         } else {
             $matchAttributes = [
                 'status' => $attributes['status'],
@@ -112,19 +130,20 @@ class Tasks extends Model
     }
 
     /**
-     * @param $attributes
-     * @return mixed
+     * @param int $id
+     * @return JsonResponse
      */
-    public function deleteTask($attributes)
+    public static function deleteTask(int $id): JsonResponse
     {
-        $task = $this->getTask($attributes['id']);
-        if ($task == null) {
-            throw new ModelNotFoundException('Task not found');
-        }
-        if($task['status'] == 0) {
-            return $task->delete();
+        $task = Tasks::find($id);
+
+        if (!$task) {
+            return response()->json(['msg' => 'Error. Task not found.']);
+        } elseif ($task->status == 0) {
+            Tasks::destroy($id);
+            return response()->json(['msg' => 'This task successfully deleted']);
         } else {
-            throw new ModelNotFoundException('This task is already finished');
+            return response()->json(['msg' => 'Error. This task is not done']);
         }
     }
 }
