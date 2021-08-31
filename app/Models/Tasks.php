@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -30,11 +31,17 @@ class Tasks extends Model
         'user_id'
     ];
 
+    /**
+     * user relation to tasks
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * relation task and subtask and so on
+     */
     public function subtasks(): HasMany
     {
         return $this->hasMany('App\Models\Tasks', 'parent_id')->with('subtasks');
@@ -51,6 +58,7 @@ class Tasks extends Model
     }
 
     /**
+     * get one task and its subtasks(if they are)
      * @param int $id
      * @return mixed
      */
@@ -60,6 +68,7 @@ class Tasks extends Model
     }
 
     /**
+     * get all tasks hierarchically
      * @return Collection|Tasks[]
      */
     public static function getAllTask()
@@ -88,6 +97,14 @@ class Tasks extends Model
         return $task->save();
     }
 
+    /**
+     * get task, look for unfinished tasks
+     * if there are unfinished task, don't update status
+     * if there aren't update status
+     * @param int $id
+     * @param $status
+     * @return JsonResponse
+     */
     public static function updateSt(int $id, $status): JsonResponse
     {
         try {
@@ -108,7 +125,9 @@ class Tasks extends Model
     }
 
     /**
-     * @return mixed
+     * if request have title -> search only by title
+     * if request have priority range and status -> search by these parameters
+     * sorted by the provided type for sort
      */
     public static function filter($attributes)
     {
@@ -124,6 +143,7 @@ class Tasks extends Model
     }
 
     /**
+     * find task, checking status, if it's not done -> delete.
      * @param int $id
      * @return JsonResponse
      */
@@ -137,7 +157,7 @@ class Tasks extends Model
             Tasks::destroy($id);
             return response()->json(['msg' => 'This task successfully deleted']);
         } else {
-            return response()->json(['msg' => 'Error. This task is not done']);
+            return response()->json(['msg' => 'Error. This task is done']);
         }
     }
 }

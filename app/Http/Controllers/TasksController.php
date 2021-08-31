@@ -63,10 +63,10 @@ class TasksController extends Controller
     public function filter(Request $request): JsonResponse
     {
         $task = Tasks::filter($request);
-        if ($task) {
+        if(!empty($task)) {
             return response()->json($task);
         } else {
-            echo 'Sorry no match';
+            return response()->json(['msg' => 'Sorry, no match']);
         }
     }
 
@@ -76,10 +76,6 @@ class TasksController extends Controller
      */
     public function delete($id): JsonResponse
     {
-        try {
-            return Tasks::deleteTask($id);
-        } catch (ModelNotFoundException $exception) {
-            return response()->json(['msg' => $exception->getMessage()], 404);
-        }
+        return Tasks::deleteTask($id);
     }
 }
