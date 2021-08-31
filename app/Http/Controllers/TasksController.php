@@ -50,7 +50,7 @@ class TasksController extends Controller
     /**
      * @return JsonResponse
      */
-    public function getAll()
+    public function getAll(): JsonResponse
     {
         $tasks = Tasks::getAllTask();
         return response()->json($tasks);
@@ -60,7 +60,7 @@ class TasksController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function filter(Request $request)
+    public function filter(Request $request): JsonResponse
     {
         $task = Tasks::filter($request);
         if ($task) {
