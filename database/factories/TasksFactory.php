@@ -25,7 +25,7 @@ class TasksFactory extends Factory
     {
         return [
             'parent_id' => $this->faker->boolean(50) ? $this->faker->numberBetween(1, 20) : null,
-            'status' => $this->faker->boolean(),
+            'status' => $this->faker->randomElement(['todo', 'done']),
             'priority' => $this->faker->numberBetween(0, 5),
             'title' => $this->faker->realText(10),
             'description' => $this->faker->realText(15),

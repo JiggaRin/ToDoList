@@ -48,19 +48,6 @@ class TasksController extends Controller
     }
 
     /**
-     * @param $id
-     * @return JsonResponse
-     */
-    public function get($id)
-    {
-        $task = $this->task->getsTask($id);
-        if ($task) {
-            return response()->json($task);
-        }
-        return response()->json(['msg' => 'Tasks not found'], 404);
-    }
-
-    /**
      * @return JsonResponse
      */
     public function getAll()
@@ -75,7 +62,7 @@ class TasksController extends Controller
      */
     public function filter(Request $request)
     {
-        $task = $this->task->filter($request);
+        $task = Tasks::filter($request);
         if ($task) {
             return response()->json($task);
         } else {

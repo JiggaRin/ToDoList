@@ -9,11 +9,15 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class Tasks extends Model
 {
     use HasFactory;
 
+    /**
+     * @var mixed
+     */
     protected $table = 'tasks';
 
     protected $fillable = [
@@ -52,7 +56,7 @@ class Tasks extends Model
      */
     public static function getTask(int $id)
     {
-        return Tasks::where('id', $id)->with('subtasks')->first();
+        return Tasks::where('id', '=', $id)->with('subtasks')->first();
     }
 
     /**
@@ -84,15 +88,15 @@ class Tasks extends Model
         return $task->save();
     }
 
-    public static function updateSt(int $id, int $status): JsonResponse
+    public static function updateSt(int $id, $status): JsonResponse
     {
         try {
             $task = self::getTask($id);
             $unfinished_tasks = array_filter($task->subtasks->toArray(), function ($item) {
-                return $item['status'] === 0;
+                return $item['status'] == 'todo';
             });
             if (!empty($unfinished_tasks)) {
-                return response()->json(['msg' => 'There is unfinished subtasks left'], 404);
+                return response()->json(['msg' => 'There are unfinished subtasks left'], 404);
             } else {
                 $task->status = $status;
                 $task->save();
@@ -106,27 +110,17 @@ class Tasks extends Model
     /**
      * @return mixed
      */
-    public function filter($attributes)
+    public static function filter($attributes)
     {
-        $query = Tasks::select();
+        $query = DB::table('tasks');
         if ($attributes['title']) {
             $query->where('title', $attributes['title']);
-            $matchAttributes = ['title' => $attributes['title']];
         }
-        if($attributes['priority']) {
-            if(is_array($attributes['priority'])){
-                $query->whereBetween('priority', $attributes['priority'][0], $attributes['priority'][1]);
-            } else {
-                $query->where('priority', $attributes['priority']);
-            }
-        } else {
-            $matchAttributes = [
-                'status' => $attributes['status'],
-                'priority' => $attributes['priority'],
-            ];
+        if ($attributes['priority'] && $attributes['status']) {
+            $query->where('status', $attributes['status'])
+                ->whereBetween('priority', $attributes['priority']);
         }
-
-        return Tasks::where($matchAttributes)->orderBy($attributes['sorted'], 'asc')->get();
+        return $query->orderBy($attributes['sorted'])->get();
     }
 
     /**
@@ -139,7 +133,7 @@ class Tasks extends Model
 
         if (!$task) {
             return response()->json(['msg' => 'Error. Task not found.']);
-        } elseif ($task->status == 0) {
+        } elseif ($task->status === 'todo') {
             Tasks::destroy($id);
             return response()->json(['msg' => 'This task successfully deleted']);
         } else {
